@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Working Screenshot Tool</title>
+    <style>
+        /* Your existing styles remain the same */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Website Screenshot Tool</h1>
+        
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="Enter website URL (e.g., https://example.com)">
+            <button id="loadBtn">Load Website</button>
+        </div>
+        
+        <p class="status" id="status">Ready to load website</p>
+        
+        <div class="frame-container">
+            <iframe id="websiteFrame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"></iframe>
+        </div>
+        
+        <button id="screenshotBtn" disabled>Take Screenshot</button>
+        
+        <div id="screenshotContainer">
+            <!-- Screenshots will appear here -->
+        </div>
+    </div>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <script>
+        document.getElementById('loadBtn').addEventListener('click', loadWebsite);
+        document.getElementById('screenshotBtn').addEventListener('click', takeScreenshot);
+        
+        function loadWebsite() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                alert('Please enter a website URL');
+                return;
+            }
+            
+            document.getElementById('status').textContent = 'Loading website...';
+            document.getElementById('screenshotBtn').disabled = true;
+            
+            let fullUrl = url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                fullUrl = 'https://' + url;
+            }
+            
+            const iframe = document.getElementById('websiteFrame');
+            iframe.src = '';
+            
+            // Add proxy URL if needed (would require your own proxy server)
+            // fullUrl = 'https://your-proxy-server.com?url=' + encodeURIComponent(fullUrl);
+            
+            iframe.src = fullUrl;
+            
+            iframe.onload = function() {
+                document.getElementById('status').textContent = 'Website loaded successfully';
+                document.getElementById('screenshotBtn').disabled = false;
+            };
+            
+            iframe.onerror = function() {
+                document.getElementById('status').textContent = 'Failed to load website';
+            };
+        }
+        
+        async function takeScreenshot() {
+            const iframe = document.getElementById('websiteFrame');
+            const screenshotContainer = document.getElementById('screenshotContainer');
+            
+            document.getElementById('status').textContent = 'Capturing screenshot...';
+            
+            try {
+                // Try to capture just the visible portion first
+                const canvas = await html2canvas(iframe, {
+                    allowTaint: true,
+                    useCORS: true,
+                    scale: 0.5,
+                    logging: true,
+                    ignoreElements: (element) => {
+                        // Skip certain elements if needed
+                        return false;
+                    }
+                });
+                
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                img.className = 'screenshot';
+                img.alt = 'Screenshot';
+                
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <img src="${img.src}" class="screenshot" alt="Screenshot">
+                        <div>${new Date().toLocaleString()}</div>
+                    </div>
+                `;
+                
+                screenshotContainer.prepend(wrapper);
+                document.getElementById('status').textContent = 'Screenshot captured (partial)';
+                
+            } catch (error) {
+                console.error('Error taking screenshot:', error);
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+                
+                // Fallback: Inform user about limitations
+                const fallbackMsg = document.createElement('div');
+                fallbackMsg.innerHTML = `
+                    <div style="color: red; padding: 10px; border: 1px solid #ffcccc; background: #fff0f0;">
+                        <strong>Could not capture full screenshot due to browser security restrictions.</strong>
+                        <p>For complete screenshots, this tool would need to use a server-side solution.</p>
+                        <p>You can try the browser's built-in screenshot tools (Ctrl+Shift+S on Windows/Linux, Cmd+Shift+S on Mac).</p>
+                    </div>
+                `;
+                screenshotContainer.prepend(fallbackMsg);
+            }
+        }
+    </script>
+</body>
+</html>
