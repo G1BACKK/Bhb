@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UPI Payment - Guaranteed Working</title>
+  <title>100% Working UPI Payment</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -57,7 +57,6 @@
     .phonepe { background: #5F259F; }
     .paytm { background: #02B9F4; }
     .razorpay { background: #2B2D5E; }
-    .fallback { background: #34A853; }
     .status {
       margin-top: 15px;
       padding: 10px;
@@ -70,14 +69,13 @@
 </head>
 <body>
   <div class="payment-box">
-    <h1>Pay via UPI (Guaranteed Working)</h1>
+    <h1>100% Working UPI Payment</h1>
     <input type="number" id="amount" placeholder="Enter Amount (₹)" min="1" value="10">
     
-    <button class="btn gpay" onclick="payWithGPay()">Google Pay</button>
-    <button class="btn phonepe" onclick="payWithPhonePe()">PhonePe</button>
-    <button class="btn paytm" onclick="payWithPaytm()">Paytm</button>
-    <button class="btn razorpay" onclick="payWithRazorpay()">Razorpay (100% Working)</button>
-    <button class="btn fallback" onclick="payWithUPI()">Any UPI App</button>
+    <button class="btn gpay" onclick="initiatePayment('gpay')">Google Pay</button>
+    <button class="btn phonepe" onclick="initiatePayment('phonepe')">PhonePe</button>
+    <button class="btn paytm" onclick="initiatePayment('paytm')">Paytm</button>
+    <button class="btn razorpay" onclick="initiatePayment('razorpay')">Razorpay (Guaranteed)</button>
     
     <div id="status" class="status"></div>
   </div>
@@ -92,69 +90,67 @@
       amount = e.target.value;
     });
 
-    // Show status message
-    function showStatus(msg, success) {
+    function showStatus(msg, isSuccess) {
       const status = document.getElementById("status");
       status.textContent = msg;
-      status.style.display = "block";
-      status.className = "status " + (success ? "success" : "error");
-      setTimeout(() => status.style.display = "none", 5000);
+      status.className = 'status ' + (isSuccess ? 'success' : 'error');
+      status.style.display = 'block';
+      setTimeout(() => status.style.display = 'none', 5000);
     }
 
-    // ===== PAYMENT METHODS =====
+    // ===== GUARANTEED PAYMENT FLOW =====
+    function initiatePayment(method) {
+      // Validate amount
+      if (!amount || amount < 1) {
+        showStatus("Please enter valid amount (₹1 minimum)", false);
+        return;
+      }
 
-    // 1. Razorpay (100% Working)
-    function payWithRazorpay() {
-      window.open(`https://rzp.io/l/g1g4?amount=${amount * 100}`, '_blank');
-    }
+      // 1. FIRST TRY: Direct UPI App Links
+      let appLink = "";
+      switch(method) {
+        case 'gpay':
+          appLink = `tez://upi/pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+          break;
+        case 'phonepe':
+          appLink = `phonepe://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+          break;
+        case 'paytm':
+          appLink = `paytmmp://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+          break;
+        case 'razorpay':
+          // Directly use Razorpay if selected
+          window.open(`https://rzp.io/l/g1g4?amount=${amount * 100}`, '_blank');
+          return;
+      }
 
-    // 2. Google Pay (Android Intent + Fallback)
-    function payWithGPay() {
-      const gpayLink = `https://gpay.app.goo.gl/dUqjU7?pa=${upiID}&pn=${payeeName}&am=${amount}`;
-      const androidIntent = `intent://pay?pa=${upiID}&pn=${payeeName}&am=${amount}&cu=INR#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+      // Try opening UPI app
+      window.location.href = appLink;
       
-      // Try Android Intent first
-      window.location.href = androidIntent;
-      
-      // Fallback to GPay web link
+      // 2. SECOND TRY: Android Intent (works better)
       setTimeout(() => {
-        if (!document.hidden) window.location.href = gpayLink;
-      }, 500);
+        if (!document.hidden) {
+          const intentLink = `intent://pay?pa=${upiID}&pn=${payeeName}&am=${amount}&cu=INR#Intent;scheme=upi;package=${getPackageName(method)};end`;
+          window.location.href = intentLink;
+        }
+      }, 300);
+
+      // 3. FINAL FALLBACK: Razorpay (100% working)
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.open(`https://rzp.io/l/g1g4?amount=${amount * 100}`, '_blank');
+          showStatus("Redirecting to Razorpay for secure payment", true);
+        }
+      }, 1000);
     }
 
-    // 3. PhonePe (Deep Link + Fallback)
-    function payWithPhonePe() {
-      const phonepeLink = `phonepe://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
-      const phonepeWebLink = `https://phonepe.com/upi-hybrid/${upiID}?amount=${amount}`;
-      
-      window.location.href = phonepeLink;
-      
-      setTimeout(() => {
-        if (!document.hidden) window.location.href = phonepeWebLink;
-      }, 500);
-    }
-
-    // 4. Paytm (Deep Link + Fallback)
-    function payWithPaytm() {
-      const paytmLink = `paytmmp://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
-      const paytmWebLink = `https://paytm.com/pay?upi=${upiID}&amount=${amount}`;
-      
-      window.location.href = paytmLink;
-      
-      setTimeout(() => {
-        if (!document.hidden) window.location.href = paytmWebLink;
-      }, 500);
-    }
-
-    // 5. Any UPI App (Fallback to Razorpay)
-    function payWithUPI() {
-      const upiLink = `upi://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
-      
-      window.location.href = upiLink;
-      
-      setTimeout(() => {
-        if (!document.hidden) payWithRazorpay();
-      }, 500);
+    function getPackageName(method) {
+      switch(method) {
+        case 'gpay': return 'com.google.android.apps.nbu.paisa.user';
+        case 'phonepe': return 'com.phonepe.app';
+        case 'paytm': return 'net.one97.paytm';
+        default: return '';
+      }
     }
   </script>
 </body>
